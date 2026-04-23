@@ -4,6 +4,7 @@ import Sneaker
 import SneakerAdapter
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
 import android.widget.GridView
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.firestore.FirebaseFirestore
@@ -23,7 +24,46 @@ class StorefrontActivity : AppCompatActivity() {
 
         gridView = findViewById(R.id.gridView)
 
+        adapter = SneakerAdapter(this, sneakerList)
+        gridView.adapter = adapter
+
+        val btnAdmin = findViewById<Button>(R.id.btnAdmin)
+        val searchView = findViewById<androidx.appcompat.widget.SearchView>(R.id.searchView)
+
+        btnAdmin.setOnClickListener {
+            val intent = Intent(this, AdminPanelActivity::class.java)
+            startActivity(intent)
+        }
+
+        searchView.setOnQueryTextListener(object :
+            androidx.appcompat.widget.SearchView.OnQueryTextListener {
+
+            override fun onQueryTextSubmit(query: String?) = false
+
+            override fun onQueryTextChange(text: String?): Boolean {
+
+                val q = text?.lowercase() ?: ""
+
+                sneakerList.clear()
+
+                if (q.isEmpty()) {
+                    sneakerList.addAll(fullList)
+                } else {
+                    for (s in fullList) {
+                        val model = s.modelName ?: ""
+                        if (model.lowercase().contains(q)) {
+                            sneakerList.add(s)
+                        }
+                    }
+                }
+
+                adapter.notifyDataSetChanged()
+                return true
+            }
+        })
+
         loadSneakers()
+        setupClick()
     }
 
     private fun loadSneakers() {
@@ -35,20 +75,17 @@ class StorefrontActivity : AppCompatActivity() {
                 sneakerList.clear()
                 fullList.clear()
 
-
                 for (doc in result.documents) {
+
                     val sneaker = doc.toObject(Sneaker::class.java)
+
                     if (sneaker != null) {
                         sneakerList.add(sneaker)
                         fullList.add(sneaker)
                     }
                 }
 
-                adapter = SneakerAdapter(this, sneakerList)
-                gridView.adapter = adapter
-
-                setupClick()
-                setupSearch()
+                adapter.notifyDataSetChanged()
             }
     }
 
@@ -64,42 +101,4 @@ class StorefrontActivity : AppCompatActivity() {
             startActivity(intent)
         }
     }
-
-    private fun setupSearch() {
-        val searchView = findViewById<androidx.appcompat.widget.SearchView>(R.id.searchView)
-
-        searchView.setOnQueryTextListener(object :
-            androidx.appcompat.widget.SearchView.OnQueryTextListener {
-
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                return false
-            }
-
-            override fun onQueryTextChange(newText: String?): Boolean {
-
-                val text = newText?.trim()?.lowercase() ?: ""
-
-                sneakerList.clear()
-
-
-                if (text.isEmpty()) {
-                    sneakerList.addAll(fullList)
-                } else {
-                    for (s in fullList) {
-
-                        val model = s.modelName
-
-                        if (model.lowercase().contains(text)) {
-                            sneakerList.add(s)
-                        }
-                    }
-                }
-
-                adapter.notifyDataSetChanged()
-                return true
-            }
-        })
-
-    }
 }
-
