@@ -14,6 +14,7 @@ class StorefrontActivity : AppCompatActivity() {
     private val db = FirebaseFirestore.getInstance()
 
     private var sneakerList = mutableListOf<Sneaker>()
+    private var fullList = mutableListOf<Sneaker>()
     private lateinit var adapter: SneakerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,11 +33,14 @@ class StorefrontActivity : AppCompatActivity() {
             .addOnSuccessListener { result ->
 
                 sneakerList.clear()
+                fullList.clear()
+
 
                 for (doc in result.documents) {
                     val sneaker = doc.toObject(Sneaker::class.java)
                     if (sneaker != null) {
                         sneakerList.add(sneaker)
+                        fullList.add(sneaker)
                     }
                 }
 
@@ -44,6 +48,7 @@ class StorefrontActivity : AppCompatActivity() {
                 gridView.adapter = adapter
 
                 setupClick()
+                setupSearch()
             }
     }
 
@@ -59,4 +64,42 @@ class StorefrontActivity : AppCompatActivity() {
             startActivity(intent)
         }
     }
+
+    private fun setupSearch() {
+        val searchView = findViewById<androidx.appcompat.widget.SearchView>(R.id.searchView)
+
+        searchView.setOnQueryTextListener(object :
+            androidx.appcompat.widget.SearchView.OnQueryTextListener {
+
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+
+                val text = newText?.trim()?.lowercase() ?: ""
+
+                sneakerList.clear()
+
+
+                if (text.isEmpty()) {
+                    sneakerList.addAll(fullList)
+                } else {
+                    for (s in fullList) {
+
+                        val model = s.modelName
+
+                        if (model.lowercase().contains(text)) {
+                            sneakerList.add(s)
+                        }
+                    }
+                }
+
+                adapter.notifyDataSetChanged()
+                return true
+            }
+        })
+
+    }
 }
+
